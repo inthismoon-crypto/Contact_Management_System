@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Management System | DBMS Lab Project</title>
+  <!-- Tailwind CSS for clean, responsive UI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SQL.js (WebAssembly SQLite) for real client-side SQL execution -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+  <!-- Lucide Icons for crisp UI iconography -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    code, pre, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-teal-600 text-white p-2 rounded-lg shadow-sm">
+          <i data-lucide="contact" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">Contact Management System</h1>
+          <p class="text-xs text-slate-500">Database Management System LAB &bull; Single-Page SQL Application</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Export SQL Script Button -->
+        <button onclick="downloadSQLScript()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Export .SQL Script</span>
+        </button>
+        <!-- Reset Database Button -->
+        <button onclick="openResetModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg transition" title="Reset database to initial 12 sample contacts">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Reset Demo Data</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Section 1: Summary Statistics (SQL Aggregate Functions: COUNT, SUM, MAX, MIN) -->
+    <section aria-label="Database Summary Statistics">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Contacts (COUNT) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Contacts</p>
+            <p id="stat-total" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+            <p class="text-xs text-slate-400 mt-1 font-mono">SELECT COUNT(*) FROM contacts</p>
+          </div>
+          <div class="p-2.5 bg-teal-50 text-teal-600 rounded-lg">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <!-- VIP / Favorite Contacts (COUNT with WHERE) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Favorite Contacts</p>
+            <p id="stat-favorites" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+            <p class="text-xs text-slate-400 mt-1 font-mono">SELECT COUNT(*) WHERE is_favorite=1</p>
+          </div>
+          <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+            <i data-lucide="star" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <!-- Average Interaction Score (AVG) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Avg. Priority Score</p>
+            <p id="stat-avg" class="text-2xl font-bold text-slate-900 mt-1">0.0</p>
+            <p class="text-xs text-slate-400 mt-1 font-mono">SELECT AVG(priority_score)</p>
+          </div>
+          <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+            <i data-lucide="activity" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <!-- Highest Priority Score (MAX) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Max Priority Score</p>
+            <p id="stat-max" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+            <p class="text-xs text-slate-400 mt-1 font-mono">SELECT MAX(priority_score)</p>
+          </div>
+          <div class="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
+            <i data-lucide="award" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Add/Edit Form & Contacts Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Left Column (4 cols): Add / Update Contact Record Form -->
+      <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i id="form-icon" data-lucide="user-plus" class="w-4 h-4 text-teal-600"></i>
+            <h2 id="form-title" class="font-semibold text-slate-800 text-sm">Add New Contact</h2>
+          </div>
+          <span id="edit-badge" class="hidden px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">Editing Mode</span>
+        </div>
+
+        <form id="contact-form" onsubmit="handleFormSubmit(event)" class="p-5 space-y-4">
+          <!-- Hidden flag to distinguish INSERT vs UPDATE -->
+          <input type="hidden" id="is-editing" value="false" />
+
+          <div>
+            <label for="contact-id" class="block text-xs font-semibold text-slate-700 mb-1">Contact ID (Primary Key) *</label>
+            <input type="text" id="contact-id" required placeholder="e.g., CNT-1013"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-slate-100 disabled:text-slate-500" />
+          </div>
+
+          <div>
+            <label for="full-name" class="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
+            <input type="text" id="full-name" required placeholder="e.g., Mahir Faisal"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="phone" class="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
+              <input type="text" id="phone" required placeholder="+880 1711-000000"
+                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+            </div>
+
+            <div>
+              <label for="city" class="block text-xs font-semibold text-slate-700 mb-1">City / Location *</label>
+              <input type="text" id="city" required placeholder="e.g., Dhaka"
+                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="email" class="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+            <input type="email" id="email" required placeholder="e.g., mahir.faisal@example.com"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+          </div>
+
+          <!-- Foreign Key Dropdown referencing contact_groups(group_id) -->
+          <div>
+            <label for="group-id" class="block text-xs font-semibold text-slate-700 mb-1">Contact Group (Foreign Key) *</label>
+            <select id="group-id" required
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+              <!-- Dynamically populated from contact_groups table -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 items-end">
+            <div>
+              <label for="priority-score" class="block text-xs font-semibold text-slate-700 mb-1">Priority Score (1-100) *</label>
+              <input type="number" id="priority-score" min="1" max="100" required placeholder="85"
+                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+            </div>
+
+            <div class="pb-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="is-favorite" class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500" />
+                <span class="text-xs font-semibold text-slate-700">Mark as Favorite</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-2 flex items-center gap-2">
+            <button type="submit" id="submit-btn"
+              class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span id="submit-btn-text">Save Contact</span>
+            </button>
+            <button type="button" id="cancel-edit-btn" onclick="resetForm()"
+              class="hidden px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Column (8 cols): Search/Filter & Records Table -->
+      <div class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <!-- Search & Filter Bar -->
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h2 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="book-user" class="w-4 h-4 text-teal-600"></i>
+                <span>Contacts Directory</span>
+                <span id="record-count-badge" class="ml-1 px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full">0 contacts</span>
+              </h2>
+              <span class="text-xs text-slate-500">Joined with <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-700">contact_groups</code> table</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <!-- Search Input (WHERE LIKE) -->
+              <div class="sm:col-span-6 relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="search-input" oninput="fetchAndRenderContacts()"
+                  placeholder="Search by Name, Phone, Email, or City..."
+                  class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              </div>
+
+              <!-- Group Filter (WHERE group_id = ?) -->
+              <div class="sm:col-span-3">
+                <select id="filter-group" onchange="fetchAndRenderContacts()"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="">All Groups</option>
+                </select>
+              </div>
+
+              <!-- Favorite Filter (WHERE is_favorite = ?) -->
+              <div class="sm:col-span-3">
+                <select id="filter-favorite" onchange="fetchAndRenderContacts()"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="">All Contacts</option>
+                  <option value="1">Favorites Only</option>
+                  <option value="0">Standard Only</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Data Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4">ID</th>
+                  <th class="py-3 px-4">Contact Info</th>
+                  <th class="py-3 px-4">Phone &amp; City</th>
+                  <th class="py-3 px-4">Group</th>
+                  <th class="py-3 px-4">Priority</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="contacts-table-body" class="divide-y divide-slate-200 text-sm">
+                <!-- Rows dynamically rendered via SQL SELECT -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="hidden py-12 px-4 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+              <i data-lucide="user-x" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-slate-800">No matching contacts found</h3>
+            <p class="text-xs text-slate-500 mt-1">Try adjusting your search query or add a new contact using the form.</p>
+          </div>
+        </div>
+
+        <!-- Live SQL Query Execution Log -->
+        <div class="bg-slate-900 text-slate-200 rounded-xl border border-slate-800 shadow-sm overflow-hidden">
+          <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-teal-400"></i>
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Live SQL Query Execution Log</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Real-time SQLite Engine</span>
+          </div>
+          <div id="sql-log-container" class="p-4 max-h-48 overflow-y-auto space-y-2 text-xs font-mono">
+            <!-- Executed SQL queries appear here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Database Schema & ER Relationship Reference -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="git-branch" class="w-4 h-4 text-teal-600"></i>
+            <span>Relational Database Schema (Primary Key &amp; Foreign Key Design)</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Two normalized tables linked via a Foreign Key constraint (<code class="text-teal-600">contacts.group_id &rarr; contact_groups.group_id</code>)</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-slate-600">
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Primary Key (PK)</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Foreign Key (FK)</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+        <!-- Table 1: contact_groups -->
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <div class="bg-slate-100 px-4 py-2 border-b border-slate-200 font-mono text-xs font-bold text-slate-800 flex justify-between">
+            <span>TABLE: contact_groups</span>
+            <span class="text-slate-500 font-normal">Parent Table</span>
+          </div>
+          <ul class="divide-y divide-slate-100 text-xs font-mono">
+            <li class="px-4 py-2 flex justify-between bg-amber-50/40">
+              <span class="font-semibold text-slate-800">group_id <span class="text-amber-600">(PK)</span></span>
+              <span class="text-slate-500">VARCHAR(10) NOT NULL</span>
+            </li>
+            <li class="px-4 py-2 flex justify-between">
+              <span class="text-slate-700">group_name</span>
+              <span class="text-slate-500">VARCHAR(50) NOT NULL</span>
+            </li>
+            <li class="px-4 py-2 flex justify-between">
+              <span class="text-slate-700">description</span>
+              <span class="text-slate-500">VARCHAR(150)</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Table 2: contacts -->
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <div class="bg-slate-100 px-4 py-2 border-b border-slate-200 font-mono text-xs font-bold text-slate-800 flex justify-between">
+            <span>TABLE: contacts</span>
+            <span class="text-slate-500 font-normal">Child Table</span>
+          </div>
+          <ul class="divide-y divide-slate-100 text-xs font-mono">
+            <li class="px-4 py-2 flex justify-between bg-amber-50/40">
+              <span class="font-semibold text-slate-800">contact_id <span class="text-amber-600">(PK)</span></span>
+              <span class="text-slate-500">VARCHAR(20) NOT NULL</span>
+            </li>
+            <li class="px-4 py-2 flex justify-between">
+              <span class="text-slate-700">full_name / phone / email</span>
+              <span class="text-slate-500">VARCHAR(100) / UNIQUE</span>
+            </li>
+            <li class="px-4 py-2 flex justify-between bg-teal-50/40">
+              <span class="font-semibold text-slate-800">group_id <span class="text-teal-600">(FK)</span></span>
+              <span class="text-slate-500">REFERENCES contact_groups(group_id)</span>
+            </li>
+            <li class="px-4 py-2 flex justify-between">
+              <span class="text-slate-700">city / priority_score / is_favorite</span>
+              <span class="text-slate-500">VARCHAR / INT / BOOLEAN</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Custom Delete Confirmation Modal -->
+  <div id="delete-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 bg-red-100 text-red-600 rounded-full shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Confirm Contact Deletion</h3>
+          <p class="text-sm text-slate-600 mt-1">
+            Are you sure you want to delete contact <span id="delete-contact-label" class="font-semibold text-slate-900"></span>? This executes a SQL <code class="text-xs bg-slate-100 px-1 py-0.5 rounded text-red-600">DELETE</code> command and cannot be undone.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+          Cancel
+        </button>
+        <button id="confirm-delete-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition">
+          Delete Contact
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Reset Database Confirmation Modal -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="p-2.5 bg-amber-100 text-amber-600 rounded-full shrink-0">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Reset Database to Sample Data?</h3>
+          <p class="text-sm text-slate-600 mt-1">
+            This will drop the existing tables and re-run the initial <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">CREATE TABLE</code> and <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">INSERT</code> SQL script with 12 sample contacts.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeResetModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+          Cancel
+        </button>
+        <button onclick="confirmResetDatabase()" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition">
+          Reset Database
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Banner -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-sm border border-slate-700">
+      <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4 text-teal-400"></i>
+      <span id="toast-message">Operation completed</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Global SQL.js Database Instance
+     */
+    let db = null;
+    let contactIdPendingDelete = null;
+    const STORAGE_KEY = 'dbms_lab_contact_mgmt_sqlite_v1';
+
+    /**
+     * Complete SQL Initialization Script (DDL + DML)
+     */
+    const INITIAL_SQL_SCRIPT = `
+PRAGMA foreign_keys = ON;
+
+-- 1. Create Parent Table: contact_groups
+CREATE TABLE IF NOT EXISTS contact_groups (
+  group_id VARCHAR(10) PRIMARY KEY,
+  group_name VARCHAR(50) NOT NULL,
+  description VARCHAR(150)
+);
+
+-- 2. Create Child Table: contacts with Foreign Key reference
+CREATE TABLE IF NOT EXISTS contacts (
+  contact_id VARCHAR(20) PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  city VARCHAR(60) NOT NULL,
+  group_id VARCHAR(10) NOT NULL,
+  priority_score INT NOT NULL CHECK (priority_score >= 1 AND priority_score <= 100),
+  is_favorite INTEGER NOT NULL DEFAULT 0 CHECK (is_favorite IN (0, 1)),
+  FOREIGN KEY (group_id) REFERENCES contact_groups(group_id) ON DELETE RESTRICT
+);
+
+-- 3. Insert Sample Contact Groups
+INSERT INTO contact_groups (group_id, group_name, description) VALUES
+  ('FAM', 'Family', 'Immediate and extended family members'),
+  ('FRD', 'Friends', 'University and childhood friends'),
+  ('WRK', 'Work & Colleagues', 'Professional network and teammates'),
+  ('CLT', 'Clients', 'Business clients and external partners'),
+  ('EMG', 'Emergency', 'Medical, security, and urgent contacts');
+
+-- 4. Insert 12 Sample Contact Records
+INSERT INTO contacts (contact_id, full_name, phone, email, city, group_id, priority_score, is_favorite) VALUES
+  ('CNT-1001', 'Ariful Islam', '+880 1711-234561', 'ariful.islam@techbd.com', 'Dhaka', 'WRK', 92, 1),
+  ('CNT-1002', 'Nusrat Jahan', '+880 1819-345672', 'nusrat.jahan@gmail.com', 'Chittagong', 'FAM', 98, 1),
+  ('CNT-1003', 'Tariqul Hasan', '+880 1912-456783', 'tariqul.hasan@outlook.com', 'Feni', 'FRD', 78, 0),
+  ('CNT-1004', 'Sadia Rahman', '+880 1611-567894', 'sadia.rahman@finserve.io', 'Dhaka', 'CLT', 95, 1),
+  ('CNT-1005', 'Dr. Kamal Hossain', '+880 1715-678905', 'dr.kamal@cityhospital.org', 'Dhaka', 'EMG', 100, 1),
+  ('CNT-1006', 'Farhana Yasmin', '+880 1552-789016', 'farhana.yasmin@yahoo.com', 'Sylhet', 'FAM', 90, 1),
+  ('CNT-1007', 'Mehedi Hasan', '+880 1817-890127', 'mehedi.dev@softworks.com', 'Rajshahi', 'WRK', 84, 0),
+  ('CNT-1008', 'Jannatul Ferdous', '+880 1713-901238', 'jannatul.f@univ.edu', 'Comilla', 'FRD', 72, 0),
+  ('CNT-1009', 'Rafiul Alam', '+880 1911-012349', 'rafiul.alam@globaltrade.com', 'Chittagong', 'CLT', 88, 0),
+  ('CNT-1010', 'Maliha Chowdhury', '+880 1612-123450', 'maliha.c@designstudio.co', 'Dhaka', 'WRK', 81, 0),
+  ('CNT-1011', 'Nayeem Uddin', '+880 1718-234569', 'nayeem.uddin@gmail.com', 'Khulna', 'FRD', 65, 0),
+  ('CNT-1012', 'Feni Sadar Helpline', '+880 1711-999888', 'emergency@fenisadar.gov.bd', 'Feni', 'EMG', 99, 1);
+`;
+
+    /**
+     * Initialize SQL.js WebAssembly and load saved or fresh database
+     */
+    async function initDatabase() {
+      try {
+        const SQL = await initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+        });
+
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData) {
+          const uint8Array = new Uint8Array(JSON.parse(savedData));
+          db = new SQL.Database(uint8Array);
+          db.run("PRAGMA foreign_keys = ON;");
+          logSQLQuery("-- Loaded existing SQLite database from browser localStorage");
+        } else {
+          db = new SQL.Database();
+          db.run(INITIAL_SQL_SCRIPT);
+          persistDatabase();
+          logSQLQuery("CREATE TABLE contact_groups (...); CREATE TABLE contacts (...); INSERT INTO contacts VALUES (...12 records...);");
+        }
+
+        populateGroupDropdowns();
+        refreshAllViews();
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Database Initialization Error:", err);
+        showToast("Failed to initialize SQL database engine.", true);
+      }
+    }
+
+    /**
+     * Persist SQLite binary state to localStorage
+     */
+    function persistDatabase() {
+      if (!db) return;
+      const data = db.export();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(data)));
+    }
+
+    /**
+     * Append executed SQL queries to the live terminal log
+     */
+    function logSQLQuery(sqlText) {
+      const container = document.getElementById('sql-log-container');
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = "border-l-2 border-teal-500 pl-3 py-0.5";
+      entry.innerHTML = `<span class="text-slate-500">[${timestamp}]</span> <span class="text-teal-300">${escapeHTML(sqlText)}</span>`;
+      container.prepend(entry);
+    }
+
+    /**
+     * Populate Contact Group dropdowns from `contact_groups` table
+     */
+    function populateGroupDropdowns() {
+      const stmt = db.prepare("SELECT group_id, group_name FROM contact_groups ORDER BY group_name ASC");
+      const formSelect = document.getElementById('group-id');
+      const filterSelect = document.getElementById('filter-group');
+
+      formSelect.innerHTML = '';
+      filterSelect.innerHTML = '<option value="">All Groups</option>';
+
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        const opt1 = document.createElement('option');
+        opt1.value = row.group_id;
+        opt1.textContent = `${row.group_id} - ${row.group_name}`;
+        formSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = row.group_id;
+        opt2.textContent = `${row.group_id} (${row.group_name})`;
+        filterSelect.appendChild(opt2);
+      }
+      stmt.free();
+    }
+
+    /**
+     * Refresh Summary Cards and Contacts Table
+     */
+    function refreshAllViews() {
+      updateSummaryMetrics();
+      fetchAndRenderContacts();
+    }
+
+    /**
+     * Execute SQL Aggregate Queries (COUNT, SUM, AVG, MAX)
+     */
+    function updateSummaryMetrics() {
+      const query = `
+        SELECT
+          COUNT(*) AS total_contacts,
+          COALESCE(SUM(is_favorite), 0) AS favorite_contacts,
+          ROUND(AVG(priority_score), 1) AS avg_priority,
+          MAX(priority_score) AS max_priority
+        FROM contacts;
+      `;
+      const res = db.exec(query);
+      if (res.length > 0 && res[0].values.length > 0) {
+        const [total, favorites, avg, max] = res[0].values[0];
+        document.getElementById('stat-total').textContent = total ?? 0;
+        document.getElementById('stat-favorites').textContent = favorites ?? 0;
+        document.getElementById('stat-avg').textContent = total > 0 ? Number(avg).toFixed(1) : '0.0';
+        document.getElementById('stat-max').textContent = total > 0 ? max : '0';
+      }
+    }
+
+    /**
+     * Execute SQL SELECT with INNER JOIN and WHERE filtering
+     */
+    function fetchAndRenderContacts() {
+      const searchVal = document.getElementById('search-input').value.trim();
+      const groupFilter = document.getElementById('filter-group').value;
+      const favFilter = document.getElementById('filter-favorite').value;
+
+      let conditions = [];
+      let params = [];
+
+      if (searchVal !== '') {
+        conditions.push("(c.contact_id LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.city LIKE ?)");
+        const likePattern = `%${searchVal}%`;
+        params.push(likePattern, likePattern, likePattern, likePattern, likePattern);
+      }
+      if (groupFilter !== '') {
+        conditions.push("c.group_id = ?");
+        params.push(groupFilter);
+      }
+      if (favFilter !== '') {
+        conditions.push("c.is_favorite = ?");
+        params.push(Number(favFilter));
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const sql = `
+        SELECT c.contact_id, c.full_name, c.phone, c.email, c.city, c.group_id, g.group_name, c.priority_score, c.is_favorite
+        FROM contacts c
+        INNER JOIN contact_groups g ON c.group_id = g.group_id
+        ${whereClause}
+        ORDER BY c.is_favorite DESC, c.contact_id ASC;
+      `;
+
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+
+      const tbody = document.getElementById('contacts-table-body');
+      const emptyState = document.getElementById('empty-state');
+      tbody.innerHTML = '';
+
+      let count = 0;
+      while (stmt.step()) {
+        count++;
+        const row = stmt.getAsObject();
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/90 transition";
+
+        const favStar = row.is_favorite === 1
+          ? `<button onclick="toggleFavorite('${escapeHTML(row.contact_id)}', 0)" class="text-amber-500 hover:text-amber-600 transition" title="Remove from Favorites"><i data-lucide="star" class="w-4 h-4 fill-amber-400"></i></button>`
+          : `<button onclick="toggleFavorite('${escapeHTML(row.contact_id)}', 1)" class="text-slate-300 hover:text-amber-400 transition" title="Mark as Favorite"><i data-lucide="star" class="w-4 h-4"></i></button>`;
+
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-mono text-xs font-semibold text-teal-700 whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              ${favStar}
+              <span>${escapeHTML(row.contact_id)}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4">
+            <div class="font-medium text-slate-900">${escapeHTML(row.full_name)}</div>
+            <div class="text-xs text-slate-500">${escapeHTML(row.email)}</div>
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap">
+            <div class="text-slate-800 font-mono text-xs">${escapeHTML(row.phone)}</div>
+            <div class="text-xs text-slate-500">${escapeHTML(row.city)}</div>
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap">
+            ${renderGroupBadge(row.group_id, row.group_name)}
+          </td>
+          <td class="py-3.5 px-4 font-mono font-semibold text-slate-800">${row.priority_score}</td>
+          <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+            <button onclick="startEditContact('${escapeHTML(row.contact_id)}')"
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-teal-50 hover:text-teal-700 border border-slate-300 rounded-md transition"
+              title="Edit Contact">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              <span>Edit</span>
+            </button>
+            <button onclick="openDeleteModal('${escapeHTML(row.contact_id)}', '${escapeHTML(row.full_name)}')"
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white hover:bg-red-50 border border-slate-300 rounded-md transition"
+              title="Delete Contact">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Delete</span>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+      stmt.free();
+
+      document.getElementById('record-count-badge').textContent = `${count} contact${count === 1 ? '' : 's'}`;
+      if (count === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      if (searchVal || groupFilter || favFilter !== '') {
+        logSQLQuery(`SELECT * FROM contacts c JOIN contact_groups g ON c.group_id = g.group_id ${whereClause}`);
+      }
+      lucide.createIcons();
+    }
+
+    /**
+     * Quick-toggle favorite status using SQL UPDATE
+     */
+    function toggleFavorite(contactId, newValue) {
+      const stmt = db.prepare("UPDATE contacts SET is_favorite = ? WHERE contact_id = ?;");
+      stmt.run([newValue, contactId]);
+      stmt.free();
+      logSQLQuery(`UPDATE contacts SET is_favorite = ${newValue} WHERE contact_id = '${contactId}';`);
+      persistDatabase();
+      refreshAllViews();
+      showToast(newValue === 1 ? `Marked ${contactId} as Favorite.` : `Removed ${contactId} from Favorites.`);
+    }
+
+    /**
+     * Handle Form Submission for both INSERT (Add) and UPDATE (Edit)
+     */
+    function handleFormSubmit(event) {
+      event.preventDefault();
+
+      const isEditing = document.getElementById('is-editing').value === 'true';
+      const contactId = document.getElementById('contact-id').value.trim();
+      const fullName = document.getElementById('full-name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const city = document.getElementById('city').value.trim();
+      const groupId = document.getElementById('group-id').value;
+      const priorityScore = parseInt(document.getElementById('priority-score').value, 10);
+      const isFavorite = document.getElementById('is-favorite').checked ? 1 : 0;
+
+      if (isNaN(priorityScore) || priorityScore < 1 || priorityScore > 100) {
+        showToast("Priority score must be between 1 and 100.", true);
+        return;
+      }
+
+      try {
+        if (isEditing) {
+          const stmt = db.prepare(`
+            UPDATE contacts
+            SET full_name = ?, phone = ?, email = ?, city = ?, group_id = ?, priority_score = ?, is_favorite = ?
+            WHERE contact_id = ?;
+          `);
+          stmt.run([fullName, phone, email, city, groupId, priorityScore, isFavorite, contactId]);
+          stmt.free();
+
+          logSQLQuery(`UPDATE contacts SET full_name='${fullName}', phone='${phone}', city='${city}', group_id='${groupId}', priority_score=${priorityScore}, is_favorite=${isFavorite} WHERE contact_id='${contactId}';`);
+          showToast(`Updated contact ${fullName} (${contactId}).`);
+        } else {
+          const stmt = db.prepare(`
+            INSERT INTO contacts (contact_id, full_name, phone, email, city, group_id, priority_score, is_favorite)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+          `);
+          stmt.run([contactId, fullName, phone, email, city, groupId, priorityScore, isFavorite]);
+          stmt.free();
+
+          logSQLQuery(`INSERT INTO contacts VALUES ('${contactId}', '${fullName}', '${phone}', '${email}', '${city}', '${groupId}', ${priorityScore}, ${isFavorite});`);
+          showToast(`Added new contact ${fullName} (${contactId}).`);
+        }
+
+        persistDatabase();
+        resetForm();
+        refreshAllViews();
+      } catch (err) {
+        console.error("SQL Execution Error:", err);
+        if (err.message && err.message.includes('UNIQUE constraint failed')) {
+          showToast("Error: Contact ID or Email already exists in the database.", true);
+        } else {
+          showToast(`SQL Error: ${err.message}`, true);
+        }
+      }
+    }
+
+    /**
+     * Load an existing contact record into the form for editing
+     */
+    function startEditContact(contactId) {
+      const stmt = db.prepare("SELECT * FROM contacts WHERE contact_id = ?");
+      stmt.bind([contactId]);
+      if (stmt.step()) {
+        const contact = stmt.getAsObject();
+        document.getElementById('is-editing').value = 'true';
+        const idInput = document.getElementById('contact-id');
+        idInput.value = contact.contact_id;
+        idInput.disabled = true;
+
+        document.getElementById('full-name').value = contact.full_name;
+        document.getElementById('phone').value = contact.phone;
+        document.getElementById('email').value = contact.email;
+        document.getElementById('city').value = contact.city;
+        document.getElementById('group-id').value = contact.group_id;
+        document.getElementById('priority-score').value = contact.priority_score;
+        document.getElementById('is-favorite').checked = contact.is_favorite === 1;
+
+        document.getElementById('form-title').textContent = `Edit Contact (${contact.contact_id})`;
+        document.getElementById('edit-badge').classList.remove('hidden');
+        document.getElementById('submit-btn-text').textContent = 'Update Contact';
+        document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      }
+      stmt.free();
+    }
+
+    /**
+     * Reset Form back to Add Mode
+     */
+    function resetForm() {
+      document.getElementById('contact-form').reset();
+      document.getElementById('is-editing').value = 'false';
+      const idInput = document.getElementById('contact-id');
+      idInput.disabled = false;
+
+      document.getElementById('form-title').textContent = 'Add New Contact';
+      document.getElementById('edit-badge').classList.add('hidden');
+      document.getElementById('submit-btn-text').textContent = 'Save Contact';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+    }
+
+    /**
+     * Delete Confirmation Modal Handlers
+     */
+    function openDeleteModal(contactId, fullName) {
+      contactIdPendingDelete = contactId;
+      document.getElementById('delete-contact-label').textContent = `${fullName} (${contactId})`;
+      document.getElementById('delete-modal').classList.remove('hidden');
+
+      document.getElementById('confirm-delete-btn').onclick = () => {
+        executeDeleteContact(contactIdPendingDelete);
+      };
+    }
+
+    function closeDeleteModal() {
+      contactIdPendingDelete = null;
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    function executeDeleteContact(contactId) {
+      if (!contactId) return;
+      try {
+        const stmt = db.prepare("DELETE FROM contacts WHERE contact_id = ?;");
+        stmt.run([contactId]);
+        stmt.free();
+
+        logSQLQuery(`DELETE FROM contacts WHERE contact_id = '${contactId}';`);
+        persistDatabase();
+
+        if (document.getElementById('contact-id').value === contactId) {
+          resetForm();
+        }
+        closeDeleteModal();
+        refreshAllViews();
+        showToast(`Deleted contact record ${contactId}.`);
+      } catch (err) {
+        showToast(`Delete failed: ${err.message}`, true);
+      }
+    }
+
+    /**
+     * Reset Database Modal Handlers
+     */
+    function openResetModal() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+
+    function confirmResetDatabase() {
+      localStorage.removeItem(STORAGE_KEY);
+      db.run("DROP TABLE IF EXISTS contacts; DROP TABLE IF EXISTS contact_groups;");
+      db.run(INITIAL_SQL_SCRIPT);
+      persistDatabase();
+      resetForm();
+      document.getElementById('search-input').value = '';
+      document.getElementById('filter-group').value = '';
+      document.getElementById('filter-favorite').value = '';
+      populateGroupDropdowns();
+      refreshAllViews();
+      logSQLQuery("-- Database reset to initial schema and 12 sample contacts.");
+      closeResetModal();
+      showToast("Database reset to initial 12 sample contacts.");
+    }
+
+    /**
+     * Generate & Download a complete .SQL file reflecting the current database state
+     */
+    function downloadSQLScript() {
+      let sqlDump = `-- ============================================================================
+-- Contact Management System - SQL Schema & Data Dump
+-- Generated for Database Management System LAB Submission
+-- ============================================================================
+
+CREATE TABLE contact_groups (
+  group_id VARCHAR(10) PRIMARY KEY,
+  group_name VARCHAR(50) NOT NULL,
+  description VARCHAR(150)
+);
+
+CREATE TABLE contacts (
+  contact_id VARCHAR(20) PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  city VARCHAR(60) NOT NULL,
+  group_id VARCHAR(10) NOT NULL,
+  priority_score INT NOT NULL CHECK (priority_score >= 1 AND priority_score <= 100),
+  is_favorite INTEGER NOT NULL DEFAULT 0 CHECK (is_favorite IN (0, 1)),
+  FOREIGN KEY (group_id) REFERENCES contact_groups(group_id)
+);
+
+-- Contact Group Records
+`;
+      const grpStmt = db.prepare("SELECT * FROM contact_groups ORDER BY group_id ASC");
+      while (grpStmt.step()) {
+        const g = grpStmt.getAsObject();
+        sqlDump += `INSERT INTO contact_groups (group_id, group_name, description) VALUES ('${g.group_id}', '${g.group_name.replace(/'/g, "''")}', '${(g.description || '').replace(/'/g, "''")}');\n`;
+      }
+      grpStmt.free();
+
+      sqlDump += `\n-- Contact Records\n`;
+      const cntStmt = db.prepare("SELECT * FROM contacts ORDER BY contact_id ASC");
+      while (cntStmt.step()) {
+        const c = cntStmt.getAsObject();
+        sqlDump += `INSERT INTO contacts (contact_id, full_name, phone, email, city, group_id, priority_score, is_favorite) VALUES ('${c.contact_id}', '${c.full_name.replace(/'/g, "''")}', '${c.phone.replace(/'/g, "''")}', '${c.email.replace(/'/g, "''")}', '${c.city.replace(/'/g, "''")}', '${c.group_id}', ${c.priority_score}, ${c.is_favorite});\n`;
+      }
+      cntStmt.free();
+
+      sqlDump += `\n-- Aggregate Summary Queries Used in Application
+SELECT COUNT(*) AS total_contacts, SUM(is_favorite) AS favorite_contacts, ROUND(AVG(priority_score), 1) AS avg_priority, MAX(priority_score) AS max_priority FROM contacts;
+`;
+
+      const blob = new Blob([sqlDump], { type: 'application/sql' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'contact_management_system.sql';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Downloaded contact_management_system.sql");
+    }
+
+    /**
+     * Helper: Render colored group badge
+     */
+    function renderGroupBadge(groupId, groupName) {
+      const styles = {
+        'FAM': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'FRD': 'bg-blue-50 text-blue-700 border-blue-200',
+        'WRK': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'CLT': 'bg-purple-50 text-purple-700 border-purple-200',
+        'EMG': 'bg-red-50 text-red-700 border-red-200'
+      };
+      const cls = styles[groupId] || 'bg-slate-100 text-slate-700 border-slate-200';
+      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cls}" title="${escapeHTML(groupName)}">${escapeHTML(groupId)} &bull; ${escapeHTML(groupName)}</span>`;
+    }
+
+    /**
+     * Helper: Show toast feedback notification
+     */
+    let toastTimeout = null;
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      const iconEl = document.getElementById('toast-icon');
+
+      msgEl.textContent = message;
+      iconEl.setAttribute('data-lucide', isError ? 'alert-circle' : 'check-circle-2');
+      iconEl.className = isError ? 'w-4 h-4 text-red-400' : 'w-4 h-4 text-teal-400';
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    /**
+     * Helper: Prevent XSS when rendering user-entered strings
+     */
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Boot application on DOM ready
+    window.addEventListener('DOMContentLoaded', initDatabase);
+  </script>
+</body>
+</html>
